@@ -1,10 +1,12 @@
 import pandas as pd
 import torch
+import torchaudio
 from torch.utils.data import Dataset
 import glob
 import numpy as np
 from scipy.io import wavfile as wf
 import os
+
 
 class preprocessed(Dataset):
     '''
@@ -30,9 +32,38 @@ class preprocessed(Dataset):
         
                 
     def remove_silences(self,index): #SAMPLE FUNCTION
-        _,audio=wf.read(self.files[index])
-        #do all processing here
-        return output
+        # sr,signal=wf.read(self.files[index])
+        signal, sr = torchaudio.load(self.files[index])
+
+        # Resampling
+        signal_rs = torchaudio.transforms.Resample(sr, 44100) # Resampled signal
+        signal_rs = signal_rs(signal)
+        signal_length = signal_rs.size()[1]
+
+        # Normalizing
+        signal_nr = 0.9 * (signal_rs/(signal_rs.max())) # c_i(t)
+
+        # Equation 2
+        signal_I = []
+        for j in range(0, math.floor(signal_length/(44100*time_win))):
+            j_mu_lam = j * 44100 * time_win
+            j1_mu_lam = (j+1) * 44100 * time_win # (j+1)_mu_lam
+            signal_I.append(signal_nr[0, int(j_mu_lam) : int(j1_mu_lam)])
+
+        sig_I = torch.stack(signal_I)
+        sig_I = torch.flatten(sig_I) # (393, 2205)
+        sig_I = torch.unsqueeze(sig_I, 0) #C_I(t)
+
+        # Equation 3
+        C_t = []
+        for j in range(sig_I.size()[1]):
+            if np.abs(sig_I[0,j]) >= amp_thresh:
+                C_t.append(sig_I[0,j])
+                
+        C_t = torch.tensor(C_t)
+        C_t = torch.unsqueeze(C_t, 0) 
+
+        return C_t       
         
     def __len__(self):
         return self.data_annotated.shape[0]
