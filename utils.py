@@ -73,7 +73,7 @@ class preprocessed(Dataset):
         #directory = self.path_to_data + self.data_annotated.iloc[index,0]
         #filenames =  '{}/*.wav'.format(directory)
         #dirs_extracted = map(os.path.basename(self.path_to_data),glob.glob('{}/*.'.format(directory)))
-        #audio=self.remove_silences(index) uncomment this when silence function is defined
+        audio=self.remove_silences(index) 
         return audio
     
     def get_processed(self):
