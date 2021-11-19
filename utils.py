@@ -6,6 +6,7 @@ import glob
 import numpy as np
 from scipy.io import wavfile as wf
 import os
+import math
 
 
 class preprocessed(Dataset):
@@ -31,7 +32,7 @@ class preprocessed(Dataset):
         self.transform = transform
         
                 
-    def remove_silences(self,index): #SAMPLE FUNCTION
+    def remove_silences(self,index): 
         # sr,signal=wf.read(self.files[index])
         signal, sr = torchaudio.load(self.files[index])
 
@@ -55,15 +56,15 @@ class preprocessed(Dataset):
         sig_I = torch.unsqueeze(sig_I, 0) #C_I(t)
 
         # Equation 3
-        C_t = []
+        silenced_signal = []
         for j in range(sig_I.size()[1]):
             if np.abs(sig_I[0,j]) >= amp_thresh:
-                C_t.append(sig_I[0,j])
+                silenced_signal.append(sig_I[0,j])
                 
-        C_t = torch.tensor(C_t)
-        C_t = torch.unsqueeze(C_t, 0) 
+        silenced_signal = torch.tensor(silenced_signal)
+        silenced_signal = torch.unsqueeze(silenced_signal, 0) 
 
-        return C_t       
+        return silenced_signal       
         
     def __len__(self):
         return self.data_annotated.shape[0]
