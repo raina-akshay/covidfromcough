@@ -33,11 +33,15 @@ class preprocessed(Dataset):
         
                 
     def remove_silences(self,index): 
-        # sr,signal=wf.read(self.files[index])
+        time_win = 0.05
+        amp_thresh = 0.005
+        sample_rate = 44100        
+        
+        # Loading audio
         signal, sr = torchaudio.load(self.files[index])
 
         # Resampling
-        signal_rs = torchaudio.transforms.Resample(sr, 44100) # Resampled signal
+        signal_rs = torchaudio.transforms.Resample(sr, 44100) 
         signal_rs = signal_rs(signal)
         signal_length = signal_rs.size()[1]
 
