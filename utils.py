@@ -5,6 +5,9 @@ from torch.utils.data import Dataset
 import glob
 import numpy as np
 from scipy.io import wavfile as wf
+import librosa
+from scipy.stats import kurtosis
+from python_speech_features import logfbank
 import os
 import math
 
@@ -93,8 +96,39 @@ class extract_features:
     '''
     Extracts all of the features from the processed audio-files.
     '''
-    def __init__(self):
-        pass
+    def __init__(self,path_to_csv,device=None,transform=None,path_to_data='same'):
+        
+        self.path_to_csv = path_to_csv
+        if path_to_data == 'same':
+            self.path_to_data=path_to_csv + '/..'
+        else:
+            self.path_to_data=path_to_data + '/' if path_to_data[-1] !='/' else path_to_data        
+        data_annotated = pd.read_csv(path_to_csv)
+        
+        self.data_annotated=pd.DataFrame(np.zeros(data_annotated.shape),columns=list(data_annotated.columns))
+        self.files=glob.glob(self.path_to_data+'*/*/*.wav')
+        self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.transform = transform
+    
+    def split_audio_into_segments(self, index):
+        signal, sr = librosa.load(self.files[index])
+        signal = librosa.effects.split(signal)
+        return signal, sr
+
+    #kurtosis
+    def kurtosis(self, index):
+        signal, sr = self.split_audio_into_segments(index)
+        #print(type(signal))   #---> numpy.ndarray
+        kurtosis_var = kurtosis(signal)
+        return kurtosis_var
+    
+    #log Mel-filterbank energy feature
+    def log_energy(self, index):
+        signal, sr = self.split_audio_into_segments(index)
+        log_val = logfbank(signal, sr)
+        return log_val
+  
 
 if __name__=='__main__':
     processed=preprocessed(path_to_csv='combined_data.csv',path_to_data='Extracted_Data')
+    feature_extraction = extract_features(path_to_csv='combined_data.csv',path_to_data='Extracted_Data')
