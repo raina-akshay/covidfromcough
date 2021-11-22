@@ -110,21 +110,16 @@ class extract_features:
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.transform = transform
     
-    def split_audio_into_segments(self, index):
-        signal, sr = librosa.load(self.files[index])
-        signal = librosa.effects.split(signal)
-        return signal, sr
 
     #kurtosis
     def kurtosis(self, index):
-        signal, sr = self.split_audio_into_segments(index)
-        #print(type(signal))   #---> numpy.ndarray
+        signal, sr = librosa.load(self.files[index])
         kurtosis_var = kurtosis(signal)
         return kurtosis_var
     
     #log Mel-filterbank energy feature
     def log_energy(self, index):
-        signal, sr = self.split_audio_into_segments(index)
+        signal, sr = librosa.load(self.files[index])
         log_val = logfbank(signal, sr)
         return log_val
   
