@@ -7,7 +7,6 @@ import numpy as np
 from scipy.io import wavfile as wf
 import librosa
 from scipy.stats import kurtosis
-from python_speech_features import logfbank
 import os
 import math
 
@@ -71,7 +70,7 @@ class preprocessed(Dataset):
         silenced_signal = torch.tensor(silenced_signal)
         silenced_signal = torch.unsqueeze(silenced_signal, 0) 
 
-        return silenced_signal       
+        return silenced_signal, sample_rate      
         
     def __len__(self):
         return self.data_annotated.shape[0]
@@ -81,8 +80,8 @@ class preprocessed(Dataset):
         #directory = self.path_to_data + self.data_annotated.iloc[index,0]
         #filenames =  '{}/*.wav'.format(directory)
         #dirs_extracted = map(os.path.basename(self.path_to_data),glob.glob('{}/*.'.format(directory)))
-        audio=self.remove_silences(index) 
-        return audio
+        audio, sr=self.remove_silences(index) 
+        return audio, sr
     
     def get_processed(self):
         '''
@@ -96,43 +95,76 @@ class extract_features:
     '''
     Extracts all of the features from the processed audio-files.
     '''
-    def __init__(self,path_to_csv,device=None,transform=None,path_to_data='same'):
-        
-        self.path_to_csv = path_to_csv
-        if path_to_data == 'same':
-            self.path_to_data=path_to_csv + '/..'
-        else:
-            self.path_to_data=path_to_data + '/' if path_to_data[-1] !='/' else path_to_data        
-        data_annotated = pd.read_csv(path_to_csv)
-        
-        self.data_annotated=pd.DataFrame(np.zeros(data_annotated.shape),columns=list(data_annotated.columns))
-        self.files=glob.glob(self.path_to_data+'*/*/*.wav')
-        self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.transform = transform
-    
+    def __init__(self, signal, sr):
+        self.signal = signal
+        self.sr = sr
+        self.melspec_args = {
+            "f_max": 44100//2,
+            "n_fft": 4096 ,
+            "n_mels": 128,
+            "win_length": 4096 # Frame size 
+         }
+        self.mel_cep_coeffs = torchaudio.transforms.MFCC(
+                sample_rate=self.sr,
+                n_mfcc=65,
+                melkwargs=self.melspec_args
+                )
+    # MFCC
+    def mfcc(self):
+        return self.mel_cep_coeffs(self.signal)
+
+    # MFCC Velocity(∆)
+    def mfcc_1(self, mfcc):    
+        return torchaudio.functional.compute_deltas(mfcc)
+
+    # MFCC Acceleration(∆∆)
+    def mfcc_2(self, mfcc):
+        return torchaudio.functional.compute_deltas(mfcc)       
 
     #kurtosis
-    def kurtosis(self, index):
-        signal, sr = librosa.load(self.files[index])
-        kurtosis_var = kurtosis(signal)
+    def kurtosis(self):
+        kurtosis_var = kurtosis(self.signal)
         return kurtosis_var
     
-    #log Mel-filterbank energy feature
-    def log_energy(self, index):
-        signal, sr = librosa.load(self.files[index])
-        log_val = logfbank(signal, sr)
-        return log_val
-    
     #Zero crossing rate
-    def zcr(self,index):
-        FRAME_LENGTH=4096
-        HOP_LENGHT=2048
-        
-        signal = np.array(signal)
+    def zcr(self, frame_length=4096, hop_length=2048):
+        # Coversion to np array    
+        signal = np.array(self.signal)
         signal = signal.reshape((len(signal[0,:]),))
-        zcr_signal = librosa.feature.zero_crossing_rate(signal, frame_length=FRAME_LENGTH, hop_length=HOP_LENGTH)[0]
+
+        # Extracting zcr 
+        zcr_signal = librosa.feature.zero_crossing_rate(signal, frame_length=frame_length, hop_length=hop_length)
         return zcr_signal
+       
 
 if __name__=='__main__':
     processed=preprocessed(path_to_csv='combined_data.csv',path_to_data='Extracted_Data')
-    feature_extraction = extract_features(path_to_csv='combined_data.csv',path_to_data='Extracted_Data')
+    
+
+
+    '''
+    #####################
+    #    EXAMPLE RUN
+    #####################
+    processed=preprocessed(path_to_csv='combined_data.csv',path_to_data='Extracted_Data')
+    signal, sr = processed[2]
+
+    ## Feature extraction
+    feature_extraction = extract_features(signal, sr)
+    mfcc = feature_extraction.mfcc()
+    mfcc_1 = feature_extraction.mfcc_1(mfcc)
+    mfcc_2 = feature_extraction.mfcc_2(mfcc_1)
+
+    kurtosis = feature_extraction.kurtosis()
+    zcr = feature_extraction.zcr(4096, 2048)
+
+    print(mfcc.shape)
+    print(mfcc_1.shape)
+    print(mfcc_2.shape)
+    print(kutosis.shape)
+    print(zcr.shape)
+
+
+    '''
+
+
