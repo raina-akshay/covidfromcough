@@ -135,7 +135,7 @@ class extract_features:
 class SMOTE:
     def __init__(self, signals_arr: list, anchor):
         euc_dist = self._euc_dist(signals_arr, anchor)
-        smote = self._smote(signal: torch.Tensor, euc_dist)
+        smote = self._smote(signal, euc_dist)
 
         return smote
 
