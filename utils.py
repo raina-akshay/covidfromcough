@@ -131,7 +131,42 @@ class extract_features:
         # Extracting zcr 
         zcr_signal = librosa.feature.zero_crossing_rate(signal, frame_length=frame_length, hop_length=hop_length)
         return zcr_signal
-       
+
+class SMOTE:
+    def __init__(self, signals_arr: list, anchor):
+        euc_dist = self._euc_dist(signals_arr, anchor)
+        smote = self._smote(signal: torch.Tensor, euc_dist)
+
+        return smote
+
+
+    def _euc_dist(signals, anchor):
+        euc_dist = []
+        for sig in range(len(signals)):
+
+            if not len(signals[anchor].t())==len(signals[sig].t()):
+                # Condition which signal to pad
+                sig_pad = signals[anchor] if (len(signals[anchor].t()) < len(signals[sig].t())) else signals[sig]
+
+                # Padding 
+                num_missing_samples = np.abs(len(signals[sig].t()) - len(signals[anchor].t()))
+                last_dim_padding = (0, num_missing_samples)
+                signal = torch.nn.functional.pad(sig_pad, last_dim_padding)
+
+                # Signal with highest samples
+                sig_high = signals[anchor] if (len(signals[anchor].t()) > len(signals[sig].t())) else signals[sig]
+
+                # Calculating Euclidean distance
+                dist = np.linalg.norm(signal - sig_high)
+                euc_dist.append(dist)
+        
+        return min(euc_dist)            
+
+    def smote(signal: list, euc_dist):
+        u = np.random.uniform(0,1)
+        x_smote = signal + u * (euc_dist)
+
+        return x_smote       
 
 if __name__=='__main__':
     processed=preprocessed(path_to_csv='combined_data.csv',path_to_data='Extracted_Data')
