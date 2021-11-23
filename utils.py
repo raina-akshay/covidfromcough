@@ -113,13 +113,9 @@ class extract_features:
     def mfcc(self):
         return self.mel_cep_coeffs(self.signal)
 
-    # MFCC Velocity(∆)
-    def mfcc_1(self, mfcc):    
-        return torchaudio.functional.compute_deltas(mfcc)
-
-    # MFCC Acceleration(∆∆)
-    def mfcc_2(self, mfcc):
-        return torchaudio.functional.compute_deltas(mfcc)       
+    # MFCC Velocity(∆) & Acceleration(∆∆)
+    def mfcc_del(self, mfcc):    
+        return torchaudio.functional.compute_deltas(mfcc)  
 
     #kurtosis
     def kurtosis(self):
@@ -152,8 +148,8 @@ if __name__=='__main__':
     ## Feature extraction
     feature_extraction = extract_features(signal, sr)
     mfcc = feature_extraction.mfcc()
-    mfcc_1 = feature_extraction.mfcc_1(mfcc)
-    mfcc_2 = feature_extraction.mfcc_2(mfcc_1)
+    mfcc_vel = feature_extraction.mfcc_del(mfcc)
+    mfcc_acc = feature_extraction.mfcc_del(mfcc_vel)
 
     kurtosis = feature_extraction.kurtosis()
     zcr = feature_extraction.zcr(4096, 2048)
