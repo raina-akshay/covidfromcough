@@ -127,7 +127,9 @@ class extract_features:
     def zcr(self,index):
         FRAME_LENGTH=4096
         HOP_LENGHT=2048
-        signal, sr = librosa.load(self.files[index])
+        
+        signal = np.array(signal)
+        signal = signal.reshape((len(signal[0,:]),))
         zcr_signal = librosa.feature.zero_crossing_rate(signal, frame_length=FRAME_LENGTH, hop_length=HOP_LENGTH)[0]
         return zcr_signal
 
