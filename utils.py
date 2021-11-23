@@ -162,7 +162,7 @@ class SMOTE:
         
         return min(euc_dist)            
 
-    def smote(signal: list, euc_dist):
+    def _smote(signal: list, euc_dist):
         u = np.random.uniform(0,1)
         x_smote = signal + u * (euc_dist)
 
