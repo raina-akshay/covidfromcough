@@ -157,7 +157,7 @@ if __name__=='__main__':
     print(mfcc.shape)
     print(mfcc_1.shape)
     print(mfcc_2.shape)
-    print(kutosis.shape)
+    print(kurtosis.shape)
     print(zcr.shape)
 
 
