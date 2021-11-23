@@ -155,8 +155,8 @@ if __name__=='__main__':
     zcr = feature_extraction.zcr(4096, 2048)
 
     print(mfcc.shape)
-    print(mfcc_1.shape)
-    print(mfcc_2.shape)
+    print(mfcc_vel.shape)
+    print(mfcc_acc.shape)
     print(kurtosis.shape)
     print(zcr.shape)
 
