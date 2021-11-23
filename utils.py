@@ -122,7 +122,14 @@ class extract_features:
         signal, sr = librosa.load(self.files[index])
         log_val = logfbank(signal, sr)
         return log_val
-  
+    
+    #Zero crossing rate
+    def zcr(self,index):
+        FRAME_LENGTH=4096
+        HOP_LENGHT=2048
+        signal, sr = librosa.load(self.files[index])
+        zcr_signal = librosa.feature.zero_crossing_rate(signal, frame_length=FRAME_LENGTH, hop_length=HOP_LENGTH)[0]
+        return zcr_signal
 
 if __name__=='__main__':
     processed=preprocessed(path_to_csv='combined_data.csv',path_to_data='Extracted_Data')
