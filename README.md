@@ -13,7 +13,7 @@ The contributors to this repository are-
 <td align="center"><a href="https://github.com/divya-chhoriya"><img src="https://avatars.githubusercontent.com/u/89564985?v=4" width="80px;" alt=""/><br /><sub><b>Divya C </b></sub></a></td> 
 <td align="center"><a href="https://github.com/sannamir"><img src="https://avatars.githubusercontent.com/u/68156284?v=4" width="80px;" alt=""/><br /><sub><b>Sanna S </b></sub></a></td>                    
 <td align="center"><a href="https://github.com/mimansa-sardhalia"><img src="https://avatars.githubusercontent.com/u/87580689?v=4" width="80px;" alt=""/><br /><sub><b>Mimansa S </b></sub></a></td> 
-<td align="center"><a href="https://github.com/shubamsumbria"><img src="https://avatars.githubusercontent.com/u/38437572?v=4" width="80px;" alt=""/><br /><sub><b>Shubam S </b></sub></a></td> 
+<!-- <td align="center"><a href="https://github.com/shubamsumbria"><img src="https://avatars.githubusercontent.com/u/38437572?v=4" width="80px;" alt=""/><br /><sub><b>Shubam S </b></sub></a></td> -->
 </tr>
    </table>
 </div>
