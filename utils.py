@@ -28,39 +28,45 @@ class preprocessed(Dataset):
             self.path_to_data=path_to_data + '/' if path_to_data[-1] !='/' else path_to_data        
         data_annotated = pd.read_csv(path_to_csv)
         
-        self.data_annotated=pd.DataFrame(np.zeros(data_annotated.shape),columns=list(data_annotated.columns))
-        self.files=glob.glob(self.path_to_data+'*/*/*.wav')
+        self.data_annotated=pd.DataFrame(np.zeros((len(glob.glob(self.path_to_data+'*/*/*.wav')),36)),columns=list(data_annotated.columns))
+        self.files=glob.glob(self.path_to_data+'*/*/')
+        #self.files=glob.glob(self.path_to_data+'*/*/') #paths to individual patients
+        add=0
+        for subdir in self.files:
+            #path_to_person=subdir
+            count_of_files=len(glob.glob(subdir + '/*.wav'))  
+            subdir=subdir[0:-1]
+            idx=data_annotated[data_annotated['id']==subdir.split('\\')[-1]].index.values[0]
+            self.data_annotated.iloc[add:add+count_of_files,:]=np.hstack((np.transpose([[subdir]*count_of_files]),np.array([data_annotated.iloc[idx,1:]]*count_of_files)))
+            add+=count_of_files
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.transform = transform
         
                 
-    def remove_silences(self,index): 
+    def _remove_silences(self,signal,sr):
         time_win = 0.05
         amp_thresh = 0.005
-        sample_rate = 44100        
+        sample_rate = 44100
         
-        # Loading audio
-        signal, sr = torchaudio.load(self.files[index])
-
         # Resampling
-        signal_rs = torchaudio.transforms.Resample(sr, 44100) 
+        signal_rs = torchaudio.transforms.Resample(sr, sample_rate) 
         signal_rs = signal_rs(signal)
         signal_length = signal_rs.size()[1]
-
+        
         # Normalizing
         signal_nr = 0.9 * (signal_rs/(signal_rs.max())) # c_i(t)
-
+        
         # Equation 2
         signal_I = []
-        for j in range(0, math.floor(signal_length/(44100*time_win))):
-            j_mu_lam = j * 44100 * time_win
-            j1_mu_lam = (j+1) * 44100 * time_win # (j+1)_mu_lam
+        for j in range(0, math.floor(signal_length/(sample_rate*time_win))):
+            j_mu_lam = j * sample_rate * time_win
+            j1_mu_lam = (j+1) * sample_rate * time_win # (j+1)_mu_lam
             signal_I.append(signal_nr[0, int(j_mu_lam) : int(j1_mu_lam)])
 
         sig_I = torch.stack(signal_I)
         sig_I = torch.flatten(sig_I) # (393, 2205)
         sig_I = torch.unsqueeze(sig_I, 0) #C_I(t)
-
+        
         # Equation 3
         silenced_signal = []
         for j in range(sig_I.size()[1]):
@@ -68,20 +74,18 @@ class preprocessed(Dataset):
                 silenced_signal.append(sig_I[0,j])
                 
         silenced_signal = torch.tensor(silenced_signal)
-        silenced_signal = torch.unsqueeze(silenced_signal, 0) 
-
-        return silenced_signal, sample_rate      
+        silenced_signal = torch.unsqueeze(silenced_signal, 0)
+        
+        return silenced_signal      
         
     def __len__(self):
         return self.data_annotated.shape[0]
         
     def __getitem__(self, index):
-        _,audio=wf.read(self.files[index])
-        #directory = self.path_to_data + self.data_annotated.iloc[index,0]
-        #filenames =  '{}/*.wav'.format(directory)
-        #dirs_extracted = map(os.path.basename(self.path_to_data),glob.glob('{}/*.'.format(directory)))
-        audio, sr=self.remove_silences(index) 
-        return audio, sr
+        path=glob.glob(self.data_annotated.iloc[index,0] + '/*.wav')
+        audio,sr=torchaudio.load(np.random.choice(path))
+        silence_removed_audio=self._remove_silences(signal=audio,sr=sr)
+        return silence_removed_audio, self.data_annotated.iloc[index,2]
     
     def get_processed(self):
         '''
