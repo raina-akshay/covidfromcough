@@ -113,13 +113,16 @@ class extract_features:
                 n_mfcc=65,
                 melkwargs=self.melspec_args
                 )
-    # MFCC
-    def mfcc(self):
-        return self.mel_cep_coeffs(self.signal)
 
-    # MFCC Velocity(∆) & Acceleration(∆∆)
-    def mfcc_del(self, mfcc):    
-        return torchaudio.functional.compute_deltas(mfcc)  
+    # MFCC
+    def mfccs(self):
+        mfcc = self.mel_cep_coeffs(self.signal)
+        # MFCC Velocity(∆)
+        mfcc_vel = torchaudio.functional.compute_deltas(mfcc)
+        # MFCC Acceleration(∆∆)
+        mfcc_acc = torchaudio.functional.compute_deltas(mfcc_vel)
+
+        return torch.stack([mfcc, mfcc_vel, mfcc_acc])
 
     #kurtosis
     def kurtosis(self):
