@@ -4,10 +4,9 @@ import torchaudio
 from torch.utils.data import Dataset
 import glob
 import numpy as np
-from scipy.io import wavfile as wf
+#from scipy.io import wavfile as wf
 import librosa
 from scipy.stats import kurtosis
-import os
 import math
 
 
@@ -31,6 +30,7 @@ class preprocessed(Dataset):
         self.data_annotated=pd.DataFrame(np.zeros((len(glob.glob(self.path_to_data+'*/*/*.wav')),36)),columns=list(data_annotated.columns))
         self.files=glob.glob(self.path_to_data+'*/*/')
         #self.files=glob.glob(self.path_to_data+'*/*/') #paths to individual patients
+        self.sample_rate = 44100
         add=0
         for subdir in self.files:
             #path_to_person=subdir
@@ -41,15 +41,15 @@ class preprocessed(Dataset):
             add+=count_of_files
         self.device = torch.device(device) if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.transform = transform
+        self.extraction = extract_features(sr=self.sample_rate)
         
                 
     def _remove_silences(self,signal,sr):
         time_win = 0.05
         amp_thresh = 0.005
-        sample_rate = 44100
         
         # Resampling
-        signal_rs = torchaudio.transforms.Resample(sr, sample_rate) 
+        signal_rs = torchaudio.transforms.Resample(sr, self.sample_rate) 
         signal_rs = signal_rs(signal)
         signal_length = signal_rs.size()[1]
         
@@ -58,9 +58,9 @@ class preprocessed(Dataset):
         
         # Equation 2
         signal_I = []
-        for j in range(0, math.floor(signal_length/(sample_rate*time_win))):
-            j_mu_lam = j * sample_rate * time_win
-            j1_mu_lam = (j+1) * sample_rate * time_win # (j+1)_mu_lam
+        for j in range(0, math.floor(signal_length/(self.sample_rate*time_win))):
+            j_mu_lam = j * self.sample_rate * time_win
+            j1_mu_lam = (j+1) * self.sample_rate * time_win # (j+1)_mu_lam
             signal_I.append(signal_nr[0, int(j_mu_lam) : int(j1_mu_lam)])
 
         sig_I = torch.stack(signal_I)
@@ -85,7 +85,8 @@ class preprocessed(Dataset):
         path=glob.glob(self.data_annotated.iloc[index,0] + '/*.wav')
         audio,sr=torchaudio.load(np.random.choice(path))
         silence_removed_audio=self._remove_silences(signal=audio,sr=sr)
-        return silence_removed_audio, self.data_annotated.iloc[index,2]
+        features_extracted=self.extraction.mfccs(signal=silence_removed_audio)
+        return features_extracted, self.data_annotated.iloc[index,2]
     
     def get_processed(self):
         '''
@@ -99,8 +100,8 @@ class extract_features:
     '''
     Extracts all of the features from the processed audio-files.
     '''
-    def __init__(self, signal, sr):
-        self.signal = signal
+    def __init__(self, sr):
+        #self.signal = signal
         self.sr = sr
         self.melspec_args = {
             "f_max": 44100//2,
@@ -115,14 +116,16 @@ class extract_features:
                 )
 
     # MFCC
-    def mfccs(self):
-        mfcc = self.mel_cep_coeffs(self.signal)
+    def mfccs(self,signal):
+        mfcc = self.mel_cep_coeffs(signal)
         # MFCC Velocity(∆)
         mfcc_vel = torchaudio.functional.compute_deltas(mfcc)
         # MFCC Acceleration(∆∆)
         mfcc_acc = torchaudio.functional.compute_deltas(mfcc_vel)
-
-        return torch.stack([mfcc, mfcc_vel, mfcc_acc])
+        if mfcc.shape[0]==1 & mfcc_vel.shape[0]==1 and mfcc_acc.shape[0]==1:
+            return torch.stack((mfcc[0,:,:],mfcc_vel[0,:,:],mfcc_acc[0,:,:]))
+        else:
+            return torch.stack((mfcc,mfcc_vel,mfcc_acc))
 
     #kurtosis
     def kurtosis(self):
