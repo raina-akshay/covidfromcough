@@ -3,6 +3,7 @@
 This repository includes the **unofficial** implementation and study of following research articles on the title.
 1. [Pahar M, Klopper M, Warren R, Niesler T. COVID-19 Cough Classification using Machine Learning and Global Smartphone Recordings. Computers in Biology and Medicine. 2021 Jun 17:104572.](https://www.sciencedirect.com/science/article/pii/S0010482521003668)
 
+
 The contributors to this repository are-
 
 <table>
@@ -19,3 +20,5 @@ The contributors to this repository are-
 </div>
 
 *******************************************************************
+
+Part of this repository corresponds to the contribution towards the Girlscript Winter of Code Program (GWoC' 21). The respective pull request can be accessed [here](https://github.com/girlscript/winter-of-contributing/pull/8936).
